@@ -14,6 +14,9 @@ const users = {
   ]
 };
 
+const findUserByName = (name) => {
+  return users.users_list.filter((user) => user.name === name);
+};
 
 app.use(express.json());
 
@@ -22,8 +25,16 @@ app.get("/", (req, res) => {
 });
 
 app.get("/users", (req, res) => {
-  res.send(users);
+  const name = req.query.name;
+
+  if (name !== undefined) {
+    const result = findUserByName(name);
+    res.send({ users_list: result });
+  } else {
+    res.send(users);
+  }
 });
+
 
 app.listen(port, () => {
   console.log(
