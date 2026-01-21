@@ -6,12 +6,12 @@
   "author": "",
   "main": "backend.js",
   "type": "module",
-
   "scripts": {
     "dev": "npx nodemon backend.js",
     "start": "node backend.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.2.1"
   }
 }

@@ -1,5 +1,5 @@
-// backend.js
 import express from "express";
+import cors from "cors";
 
 const app = express();
 const port = 8000;
@@ -42,6 +42,9 @@ const findUsers = ({ name, job }) => {
     return matchesName && matchesJob;
   });
 };
+
+app.use(cors());
+app.use(express.json());
 
 app.get("/users", (req, res) => {
   const { name, job } = req.query;
@@ -92,8 +95,6 @@ app.post("/users", (req, res) => {
   addUser(userToAdd);
   res.status(200).send();
 });
-
-app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
