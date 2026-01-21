@@ -30,15 +30,26 @@ function MyApp() {
     });
   }
 
-  function updateList(person) {
+  /*function updateList(person) {
     postUser(person)
       .then((res) => {
         if (res.status !== 201) throw new Error("Insert failed");
         setCharacters([...characters, person]);
       })
       .catch((error) => console.log(error));
-  }
+  }*/
 
+  function updateList(person) {
+    postUser(person)
+      .then((res) => {
+        if (res.status !== 201) throw new Error("Insert failed");
+        return res.json();
+      })
+      .then((createdUser) => {
+        setCharacters([...characters, createdUser]);
+      })
+      .catch((error) => console.log(error));
+  }
 
   return (
     <div className="container">
