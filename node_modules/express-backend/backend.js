@@ -43,6 +43,10 @@ const findUsers = ({ name, job }) => {
   });
 };
 
+const generateId = () => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
 app.use(cors());
 app.use(express.json());
 
@@ -91,10 +95,15 @@ app.get("/users", (req, res) => {
 });
 
 app.post("/users", (req, res) => {
-  const userToAdd = req.body;
+  const userToAdd = {
+    ...req.body,
+    id: generateId(),
+  };
+
   addUser(userToAdd);
-  res.status(201).send();
+  res.status(201).send(userToAdd);
 });
+
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
