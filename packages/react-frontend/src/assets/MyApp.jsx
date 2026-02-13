@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Table from "./Table";
 import Form from "./Form";
@@ -18,7 +19,7 @@ function MyApp() {
 
   function removeOneCharacter(indexToRemove) {
     const user = characters[indexToRemove];
-    const id = user.id;
+    const id = user._id;
 
     deleteUser(id)
       .then((res) => {
@@ -27,7 +28,6 @@ function MyApp() {
       })
       .catch((error) => console.log(error));
   }
-
 
   function postUser(person) {
     return fetch("http://localhost:8000/users", {

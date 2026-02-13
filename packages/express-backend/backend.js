@@ -1,116 +1,92 @@
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+
+import {
+  findAllUsers,
+  findUsersByName,
+  findUsersByJob,
+  findUsersByNameAndJob,
+  findUserById,
+  createUser,
+  deleteUserById,
+} from "./services/user-services.js";
 
 const app = express();
 const port = 8000;
 
-const users = {
-  users_list: [
-    { id: "xyz789", name: "Charlie", job: "Janitor" },
-    { id: "abc123", name: "Mac", job: "Bouncer" },
-    { id: "ppp222", name: "Mac", job: "Professor" },
-    { id: "yat999", name: "Dee", job: "Aspring actress" },
-    { id: "zap555", name: "Dennis", job: "Bartender" }
-  ]
-};
-
-const addUser = (user) => {
-  users.users_list.push(user);
-  return user;
-};
-
-const findUserByName = (name) => {
-  return users.users_list.filter((user) => user.name === name);
-};
-
-const findUserById = (id) => {
-  return users.users_list.find((user) => user.id === id);
-};
-
-const deleteUserById = (id) => {
-  const index = users.users_list.findIndex((user) => user && user.id === id);
-  if (index === -1) return false;
-
-  users.users_list.splice(index, 1);
-  return true;
-};
-
-const findUsers = ({ name, job }) => {
-  return users.users_list.filter((user) => {
-    const matchesName = name ? user.name === name : true;
-    const matchesJob = job ? user.job === job : true;
-    return matchesName && matchesJob;
-  });
-};
-
-const generateId = () => {
-  return Math.random().toString(36).substring(2, 9);
-};
-
 app.use(cors());
 app.use(express.json());
 
-app.get("/users", (req, res) => {
-  const { name, job } = req.query;
+// Mongo connection
+const MONGO_URL = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/users";
 
-  if (name !== undefined || job !== undefined) {
-    const result = findUsers({ name, job });
-    res.send({ users_list: result });
-  } else {
-    res.send(users);
-  }
-});
-
-app.delete("/users/:id", (req, res) => {
-  const id = req.params.id;
-  const deleted = deleteUserById(id);
-
-  if (!deleted) {
-    res.status(404).send("Resource not found."); 
-  } else {
-    res.status(204).send(); 
-  }
-});
-
-app.get("/users/:id", (req, res) => {
-  const id = req.params.id;
-  const result = findUserById(id);
-
-  if (result === undefined) {
-    res.status(404).send("Resource not found.");
-  } else {
-    res.send(result);
-  }
-});
-
-app.get("/users", (req, res) => {
-  const name = req.query.name;
-
-  if (name !== undefined) {
-    const result = findUserByName(name);
-    res.send({ users_list: result });
-  } else {
-    res.send(users);
-  }
-});
-
-app.post("/users", (req, res) => {
-  const userToAdd = {
-    ...req.body,
-    id: generateId(),
-  };
-
-  addUser(userToAdd);
-  res.status(201).send(userToAdd);
-});
-
+mongoose
+  .connect(MONGO_URL)
+  .then(() => console.log(`Connected to MongoDB: ${MONGO_URL}`))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("Backend is running.");
+});
+
+// GET /users (all, by name, by job, by name+job)
+app.get("/users", async (req, res) => {
+  try {
+    const { name, job } = req.query;
+
+    let users;
+    if (name && job) users = await findUsersByNameAndJob(name, job);
+    else if (name) users = await findUsersByName(name);
+    else if (job) users = await findUsersByJob(job);
+    else users = await findAllUsers();
+
+    res.json({ users_list: users });
+  } catch (err) {
+    console.error("GET /users error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// GET /users/:id
+app.get("/users/:id", async (req, res) => {
+  try {
+    const user = await findUserById(req.params.id);
+    if (!user) return res.status(404).send("Resource not found.");
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ error: "Invalid id" });
+  }
+});
+
+// POST /users
+app.post("/users", async (req, res) => {
+  try {
+    const { name, job } = req.body;
+    if (!name || !job) {
+      return res.status(400).json({ error: "Missing required fields: name, job" });
+    }
+    const created = await createUser({ name, job });
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(400).json({ error: err.message || "Bad request" });
+  }
+});
+
+// DELETE /users/:id
+app.delete("/users/:id", async (req, res) => {
+  try {
+    const deleted = await deleteUserById(req.params.id);
+    if (!deleted) return res.status(404).send("Resource not found.");
+    res.status(204).send();
+  } catch (err) {
+    res.status(400).json({ error: "Invalid id" });
+  }
 });
 
 app.listen(port, () => {
-  console.log(
-    `Example app listening at http://localhost:${port}`
-  );
+  console.log(`Server listening at http://localhost:${port}`);
 });
